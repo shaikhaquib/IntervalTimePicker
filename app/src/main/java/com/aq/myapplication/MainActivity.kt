@@ -1,37 +1,25 @@
-package com.aq.myapplication;
+package com.aq.myapplication
 
-import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle
+import android.view.View
+import android.widget.Button
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import com.aq.myapplication.DateDialog.DateDialogListener
 
-import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
-import android.widget.Toast;
-import android.widget.Toolbar;
-
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
-public class MainActivity extends  AppCompatActivity implements DateDialog.DateDialogListener {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        Button fab = (Button) findViewById(R.id.HW);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                DateDialog dateDialog = new DateDialog(MainActivity.this);
-                dateDialog.setDateDialogListener(MainActivity.this);
-                dateDialog.show();
-            }
-        });
+class MainActivity : AppCompatActivity(), DateDialogListener {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        val fab = findViewById<View>(R.id.HW) as Button
+        fab.setOnClickListener {
+            val dateDialog = DateDialog(this@MainActivity)
+            dateDialog.setDateDialogListener(this@MainActivity)
+            dateDialog.show()
+        }
     }
 
-    @Override
-    public void OnDateValidate(String dateTime) {
-        Toast.makeText(this, dateTime, Toast.LENGTH_SHORT).show();
-
+    override fun OnDateValidate(hour: String,minutes: String) {
+        Toast.makeText(this, "$hour : $minutes", Toast.LENGTH_SHORT).show()
     }
 }

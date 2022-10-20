@@ -1,85 +1,36 @@
-package com.aq.myapplication;
+package com.aq.myapplication
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.List;
+import android.app.Activity
+import android.app.AlertDialog
+import android.app.Dialog
+import android.content.res.Resources
+import android.util.Log
+import android.view.View
+import android.widget.Button
+import com.aq.myapplication.DateDialog.DateDialogListener
+import android.widget.TimePicker
+import android.widget.NumberPicker
+import com.aq.myapplication.DateDialog
+import com.aq.myapplication.R
+import java.lang.Exception
+import java.util.*
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.res.Resources;
-import android.util.Log;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.NumberPicker;
-import android.widget.TimePicker;
+class DateDialog(private val mActivity: Activity) : View.OnClickListener {
+    private val TAG = this@DateDialog.javaClass.simpleName
+    private val mDateDialog: Dialog
+    private var dListener: DateDialogListener? = null
+    private val timePicker: TimePicker
 
-public class DateDialog implements OnClickListener {
-
-    private final String TAG = DateDialog.this.getClass().getSimpleName();
-
-    private final static int TIME_PICKER_INTERVAL = 30;
-
-    private Dialog mDateDialog;
-    private Activity mActivity;
-
-    private DateDialogListener dListener;
-    private TimePicker timePicker;
-
-    public interface DateDialogListener {
-        void OnDateValidate(String time);
+    interface DateDialogListener {
+        fun OnDateValidate(hour: String,minutes: String)
     }
 
-    public DateDialog(Activity activity) {
-        mActivity = activity;
-
-        View rootView = mActivity.getLayoutInflater().inflate(R.layout.date_dialog, null, false);
-
-        timePicker = (TimePicker) rootView.findViewById(R.id.timePicker);
-        Button validateButton = (Button) rootView.findViewById(R.id.validate_btn);
-        Button cancelButton = (Button) rootView.findViewById(R.id.cancel_btn);
-
-        validateButton.setOnClickListener(this);
-        cancelButton.setOnClickListener(this);
-
-        // Set timer picker
-        timePicker.setIs24HourView(false);
-
-        Calendar calendar = new GregorianCalendar();
-        calendar.setTimeInMillis(System.currentTimeMillis());
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
-
-        setTimePickerInterval(timePicker);
-
-        // Configure displayed time
-        if (((minute % TIME_PICKER_INTERVAL) != 0)) {
-            int minuteFloor = (minute + TIME_PICKER_INTERVAL) - (minute % TIME_PICKER_INTERVAL);
-            minute = minuteFloor + (minute == (minuteFloor + 1) ? TIME_PICKER_INTERVAL : 0);
-            if (minute >= 60) {
-                minute = minute % 60;
-                hour++;
-            }
-
-            timePicker.setCurrentHour(hour);
-            timePicker.setCurrentMinute(minute / TIME_PICKER_INTERVAL);
-        }
-
-        // Implement dialog box
-        AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
-        builder.setView(rootView);
-        mDateDialog = builder.create();
-
+    fun setDateDialogListener(listener: DateDialogListener?) {
+        dListener = listener
     }
 
-    public void setDateDialogListener(DateDialogListener listener) {
-        dListener = listener;
-    }
-
-    public void show() {
-        mDateDialog.show();
+    fun show() {
+        mDateDialog.show()
     }
 
     /**
@@ -87,49 +38,77 @@ public class DateDialog implements OnClickListener {
      *
      * @param timePicker
      */
-    private void setTimePickerInterval(TimePicker timePicker) {
+    private fun setTimePickerInterval(timePicker: TimePicker) {
         try {
-
-            NumberPicker minutePicker = (NumberPicker) timePicker.findViewById(Resources.getSystem().getIdentifier(
-                    "minute", "id", "android"));
-            minutePicker.setMinValue(0);
-            minutePicker.setMaxValue((60 / TIME_PICKER_INTERVAL) - 1);
-            List<String> displayedValues = new ArrayList<String>();
-            for (int i = 0; i < 60; i += TIME_PICKER_INTERVAL) {
-                displayedValues.add(String.format("%02d", i));
+            val minutePicker = timePicker.findViewById<View>(
+                Resources.getSystem().getIdentifier(
+                    "minute", "id", "android"
+                )
+            ) as NumberPicker
+            minutePicker.minValue = 0
+            minutePicker.maxValue = 60 / TIME_PICKER_INTERVAL - 1
+            val displayedValues: MutableList<String> = ArrayList()
+            var i = 0
+            while (i < 60) {
+                displayedValues.add(String.format("%02d", i))
+                i += TIME_PICKER_INTERVAL
             }
-            minutePicker.setDisplayedValues(displayedValues.toArray(new String[0]));
-        } catch (Exception e) {
-            Log.e(TAG, "Exception: " + e);
+            minutePicker.displayedValues = displayedValues.toTypedArray()
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception: $e")
         }
     }
 
-    @Override
-    public void onClick(View view) {
-
-        switch (view.getId()) {
-
-            case R.id.validate_btn:
-
-                String hour = String.format("%02d", timePicker.getCurrentHour());
-                String minute = String.format("%02d", timePicker.getCurrentMinute() * TIME_PICKER_INTERVAL);
+    override fun onClick(view: View) {
+        when (view.id) {
+            R.id.validate_btn -> {
+                val hour = String.format("%02d", timePicker.currentHour)
+                val minute = String.format("%02d", timePicker.currentMinute * TIME_PICKER_INTERVAL)
                 if (dListener != null) {
-                    dListener.OnDateValidate(hour +":"+ minute);
+                    dListener!!.OnDateValidate(hour,minute)
                 }
-                mDateDialog.cancel();
-
-                break;
-
-            case R.id.cancel_btn:
-                mDateDialog.cancel();
-
-                break;
-
-            default:
-                break;
-
+                mDateDialog.cancel()
+            }
+            R.id.cancel_btn -> mDateDialog.cancel()
+            else -> {}
         }
-
     }
 
+    companion object {
+        private const val TIME_PICKER_INTERVAL = 30
+    }
+
+    init {
+        val rootView = mActivity.layoutInflater.inflate(R.layout.date_dialog, null, false)
+        timePicker = rootView.findViewById<View>(R.id.timePicker) as TimePicker
+        val validateButton = rootView.findViewById<View>(R.id.validate_btn) as Button
+        val cancelButton = rootView.findViewById<View>(R.id.cancel_btn) as Button
+        validateButton.setOnClickListener(this)
+        cancelButton.setOnClickListener(this)
+
+        // Set timer picker
+        timePicker.setIs24HourView(false)
+        val calendar: Calendar = GregorianCalendar()
+        calendar.timeInMillis = System.currentTimeMillis()
+        var hour = calendar[Calendar.HOUR_OF_DAY]
+        var minute = calendar[Calendar.MINUTE]
+        setTimePickerInterval(timePicker)
+
+        // Configure displayed time
+        if (minute % TIME_PICKER_INTERVAL != 0) {
+            val minuteFloor = minute + TIME_PICKER_INTERVAL - minute % TIME_PICKER_INTERVAL
+            minute = minuteFloor + if (minute == minuteFloor + 1) TIME_PICKER_INTERVAL else 0
+            if (minute >= 60) {
+                minute = minute % 60
+                hour++
+            }
+            timePicker.currentHour = hour
+            timePicker.currentMinute = minute / TIME_PICKER_INTERVAL
+        }
+
+        // Implement dialog box
+        val builder = AlertDialog.Builder(mActivity)
+        builder.setView(rootView)
+        mDateDialog = builder.create()
+    }
 }
